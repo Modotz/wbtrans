@@ -1,0 +1,138 @@
+{
+    "kota": [
+        {
+            "kota": "BANDUNG"
+        },
+        {
+            "kota": "BEKASI"
+        },
+        {
+            "kota": "INDRAMAYU"
+        },
+        {
+            "kota": "JAKARTA"
+        },
+        {
+            "kota": "KARAWANG"
+        },
+        {
+            "kota": "PURWAKARTA"
+        },
+        {
+            "kota": "SUBANG"
+        },
+        {
+            "kota": "SUKABUMI"
+        },
+        {
+            "kota": "SUMEDANG"
+        }
+    ],
+    "childrens": [
+        {
+            "id": "BUBAT",
+            "kota": "BANDUNG",
+            "name": "BUAH BATU"
+        },
+        {
+            "id": "CLY",
+            "kota": "BANDUNG",
+            "name": "CILEUNYI"
+        },
+        {
+            "id": "DGO",
+            "kota": "BANDUNG",
+            "name": "DAGO"
+        },
+        {
+            "id": "PST",
+            "kota": "BANDUNG",
+            "name": "PASTEUR"
+        },
+        {
+            "id": "KM.125",
+            "kota": "BANDUNG",
+            "name": "REST AREA KM.125"
+        },
+        {
+            "id": "CKR",
+            "kota": "BEKASI",
+            "name": "CIKARANG"
+        },
+        {
+            "id": "LIPPO",
+            "kota": "BEKASI",
+            "name": "LIPPO"
+        },
+        {
+            "id": "PSK",
+            "kota": "BEKASI",
+            "name": "PASIR KONCI"
+        },
+        {
+            "id": "HGS",
+            "kota": "INDRAMAYU",
+            "name": "HAURGEULIS"
+        },
+        {
+            "id": "BLR",
+            "kota": "JAKARTA",
+            "name": "BLORA"
+        },
+        {
+            "id": "KPR",
+            "kota": "JAKARTA",
+            "name": "KP RAMBUTAN"
+        },
+        {
+            "id": "KNG",
+            "kota": "JAKARTA",
+            "name": "KUNINGAN"
+        },
+        {
+            "id": "PGC",
+            "kota": "JAKARTA",
+            "name": "PGC"
+        },
+        {
+            "id": "GLM",
+            "kota": "KARAWANG",
+            "name": "GALUH MAS"
+        },
+        {
+            "id": "BADAMI",
+            "kota": "KARAWANG",
+            "name": "RUKO PERUMNAS"
+        },
+        {
+            "id": "SDG",
+            "kota": "PURWAKARTA",
+            "name": "SADANG"
+        },
+        {
+            "id": "XJT",
+            "kota": "SUBANG",
+            "name": "KALIJATI"
+        },
+        {
+            "id": "SBG",
+            "kota": "SUBANG",
+            "name": "SUBANG"
+        },
+        {
+            "id": "CBD",
+            "kota": "SUKABUMI",
+            "name": "CIBADAK"
+        },
+        {
+            "id": "SKB",
+            "kota": "SUKABUMI",
+            "name": "SUKABUMI"
+        },
+        {
+            "id": "SMD",
+            "kota": "SUMEDANG",
+            "name": "SUMEDANG"
+        }
+    ]
+}
