@@ -5,13 +5,14 @@ import Profile from './profile/index';
 import Details from './home/DetailsScreen';
 import DetailsData from './home/DetailsDataScreen';
 
-import Tiket from './reservasi/TiketScreen';
-import NewTiket from './reservasi/NewTiketScreen';
-import Paket from './reservasi/PaketScreen';
-import DetailPenumpang from './reservasi/DetailPenumpangScreen';
+import Tiket from './tiket/TiketScreen';
+//import NewTiket from './reservasi/NewTiketScreen';
+import Paket from './paket/PaketScreen';
+import DetailPenumpang from './tiket/DetailPenumpangScreen';
+import EditPenumpang from './tiket/EditPenumpangScreen';
 import CetakTiket from './printer/CetakTiketScreen';
 import CetakTiket2 from './printer/CetakTiket2Screen';
-import CetakTiket3 from './printer/CetakTiket3Screen';
+import Printer from './printer/PrinterScreen';
 
 export {
     Home,
@@ -21,10 +22,10 @@ export {
     Details,
     DetailsData,
     Tiket,
-    NewTiket,
     Paket,
     DetailPenumpang,
+    EditPenumpang,
     CetakTiket,
     CetakTiket2,
-    CetakTiket3
+    Printer
 }

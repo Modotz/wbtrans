@@ -31,7 +31,7 @@ export default function Legent() {
               <Text style={{fontSize: 10}}>Booked</Text>
             </View>
           </View>
-          <View style={styles.kolomImage}>
+          {/* <View style={styles.kolomImage}>
             <Image
               style={{width: 20, height: 25, resizeMode: 'stretch'}}
               source={require('../images/kursi_pesan1.gif')}></Image>
@@ -39,7 +39,7 @@ export default function Legent() {
               <Text style={{fontSize: 10}}>Booked</Text>
               <Text style={{fontSize: 10}}>Transit</Text>
             </View>
-          </View>
+          </View> */}
           <View style={styles.kolomImage}>
             <Image
               style={styles.image}
@@ -62,15 +62,7 @@ export default function Legent() {
               <Text style={{fontSize: 10}}>Multiple</Text>
             </View>
           </View>
-          <View style={styles.kolomImage}>
-            <Image
-              style={{width: 20, height: 25, resizeMode: 'stretch'}}
-              source={require('../images/kursi_konfirm1.gif')}></Image>
-            <View style={styles.textImage}>
-              <Text style={{fontSize: 10}}>Bayar</Text>
-              <Text style={{fontSize: 10}}>Transit</Text>
-            </View>
-          </View>
+          
           <View style={styles.kolomImage}>
             <Image
               style={{width: 20, height: 25, resizeMode: 'stretch'}}
@@ -82,12 +74,11 @@ export default function Legent() {
           </View>
           <View style={styles.kolomImage}>
             <Image
-              style={styles.image}
-              source={require('../images/kursi_konfirm.gif')}>
-            </Image>
+              style={{width: 20, height: 25, resizeMode: 'stretch'}}
+              source={require('../images/kursi_konfirm1.gif')}></Image>
             <View style={styles.textImage}>
-              <Text style={{fontSize: 10}}>Sudah</Text>
               <Text style={{fontSize: 10}}>Bayar</Text>
+              <Text style={{fontSize: 10}}>Transit</Text>
             </View>
           </View>
         </View>

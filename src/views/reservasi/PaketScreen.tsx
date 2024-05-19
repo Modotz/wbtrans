@@ -200,7 +200,7 @@ const PaketScreen = ({ navigation }: {navigation: any}) => {
           <TouchableOpacity
             style={styles.button}
             onPress={
-              () => printBillTest()
+              () => {}
             }>
             <Text style={{color: Colors.white, fontSize:18, fontWeight:'bold'}}>Hitung Harga</Text>
           </TouchableOpacity>

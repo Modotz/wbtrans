@@ -29,7 +29,7 @@ const ReservasiScreen = ({ navigation }: {navigation: any}) => {
               textAlign: 'center',
               marginBottom: 16,
             }}>
-            Reservasi
+            WB Trans
           </Text>
           <TouchableOpacity
             style={styles.button}
@@ -49,7 +49,7 @@ const ReservasiScreen = ({ navigation }: {navigation: any}) => {
             textAlign: 'center',
             color: 'grey',
           }}>
-          React Native Bottom Navigation
+          {/* React Native Bottom Navigation */}
         </Text>
         <Text
           style={{
@@ -57,7 +57,7 @@ const ReservasiScreen = ({ navigation }: {navigation: any}) => {
             textAlign: 'center',
             color: 'grey',
           }}>
-          www.aboutreact.com
+          www.wbtrans.com
         </Text>
       </View>
     </SafeAreaView>

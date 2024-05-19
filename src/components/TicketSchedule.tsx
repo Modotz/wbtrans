@@ -82,7 +82,7 @@ function TicketSchedule({detailsJadwal}) {
 
   const getOutletStart = () => {
     fetch(
-      'http://192.168.100.5:8088/trans/api/reservasi/outlets_asal',
+      'https://wbtrans.modotz.com/api/reservasi/outlets_asal',
       {
         method: 'GET',
         headers: {
@@ -100,7 +100,7 @@ function TicketSchedule({detailsJadwal}) {
   };
 
   const getOutletEnd = (kd_outlet) => {
-    fetch('http://192.168.100.5:8088/trans/api/reservasi/outlets_tujuan/'+kd_outlet, {
+    fetch('https://wbtrans.modotz.com/api/reservasi/outlets_tujuan/'+kd_outlet, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -123,7 +123,7 @@ function TicketSchedule({detailsJadwal}) {
     console.log('startTrip---------------->', startTrip);
     console.log('endTrip---------------->', endTrip);
     if (startTrip != null && endTrip != null) {
-      fetch('http://192.168.100.5:8088/trans/api/reservasi/jadwal', {
+      fetch('https://wbtrans.modotz.com/api/reservasi/jadwal', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -154,7 +154,7 @@ function TicketSchedule({detailsJadwal}) {
 
   const getDetailJadwal = id => {
     if (id != null || id != '') {
-      fetch('http://192.168.100.5:8088/trans/api/reservasi/details/' + id, {
+      fetch('https://wbtrans.modotz.com/api/reservasi/details/' + id, {
         method: 'GET',
         headers: {
           Accept: 'application/json',

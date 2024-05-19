@@ -1,4 +1,5 @@
-import React, {useState, useEffect, useCallback} from 'react';
+import React, {useState, useEffect, useRef, useCallback} from 'react';
+//import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
   Text,
@@ -12,6 +13,8 @@ import {
   SectionList,
   Image,
   ImageBackground,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import {Dropdown} from 'react-native-element-dropdown';
 import {TextInput, Checkbox} from 'react-native-paper';
@@ -24,8 +27,12 @@ import Moment from 'moment';
 import Legent from '../../components/Legent';
 import TicketForm from '../../components/TicketForm';
 
+import {API_URL} from '../../constants/Repositories';
+
 const NewTiketScreen = ({navigation}: {navigation: any}) => {
   const [loading, setLoading] = useState(true);
+  const [visibleForm, setVisibleForm] = useState(false);
+  const scrollRef = useRef();
   // State for jadwal
   const [date, setDate] = useState(new Date());
   const [open, setOpen] = useState(false);
@@ -39,6 +46,8 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   const [endOutletDatasource, setEndOutletDatasource] = useState([]);
   const [jadwal, setJadwal] = useState([]);
   const [itemJadwal, setItemJadwal] = useState([]);
+  const [idJadwal, setIdJadwal] = useState([]);
+  const [idDtJadwal, setIdDtJadwal] = useState([]);
 
   const initStartOutlet = () => {
     if (startSelectedItems == null) {
@@ -86,7 +95,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getOutletStart = () => {
-    fetch('http://192.168.100.5:8088/trans/api/reservasi/outlets_asal', {
+    fetch(API_URL + 'reservasi/outlets_asal', {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -103,17 +112,13 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getOutletEnd = kd_outlet => {
-    fetch(
-      'http://192.168.100.5:8088/trans/api/reservasi/outlets_tujuan/' +
-        kd_outlet,
-      {
-        method: 'GET',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
+    fetch(API_URL + 'reservasi/outlets_tujuan/' + kd_outlet, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
       },
-    )
+    })
       .then(resp => resp.json())
       .then(json => {
         setEndOutletDatasource(json);
@@ -123,6 +128,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getJadwal = () => {
+    setVisibleForm(false);
     var tanggal = Moment(date).format('yyyy-MM-DD');
     var startTrip = initStartOutlet().id;
     var endTrip = initEndOutlet().id;
@@ -130,7 +136,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
     console.log('startTrip---------------->', startTrip);
     console.log('endTrip---------------->', endTrip);
     if (startTrip != null && endTrip != null) {
-      fetch('http://192.168.100.5:8088/trans/api/reservasi/jadwal', {
+      fetch(API_URL + 'reservasi/jadwal', {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -161,8 +167,10 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getDetailJadwal = id => {
+    setLoading(true);
+    console.log('getDetailJadwal:', id);
     if (id != null || id != '') {
-      fetch('http://192.168.100.5:8088/trans/api/reservasi/details/' + id, {
+      fetch(API_URL + 'reservasi/details/' + id, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
@@ -171,9 +179,14 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
       })
         .then(resp => resp.json())
         .then(json => {
+          //console.log(json.jadwal.id);
+          setIdJadwal(json.jadwal.id_jadwal);
+          setIdDtJadwal(json.jadwal.id);
+          setItemJadwal(json.dt_layout);
+          setPrice(json.harga_tiket);
           clearKursi();
           clearForm();
-          setItemJadwal(json.dt_layout);
+          setLoading(false);
         })
         .catch(error => console.error(error))
         .finally(() => setLoading(false));
@@ -223,6 +236,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getOtletItemStart = item => {
+    setVisibleForm(false);
     let kdOutlet = item['id'];
     // let namaOutlet =item['name'];
     setStartSelectedItems(item);
@@ -233,6 +247,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   const getOtletItemEnd = item => {
     // let kdOutlet =item['id'];
     // let namaOutlet =item['name'];
+    setVisibleForm(false);
     setEndSelectedItems(item);
     setModalEnd(!modalEnd);
   };
@@ -292,39 +307,63 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const clearForm = () => {
+    setLoading(false);
     setTelepon(null);
     setNamaPemesan(null);
     setKeterangan(null);
     setHargaTiket(null);
     setOutlet(null);
+    setKursiSelected([]);
+    setSelection(false);
+
+    scrollRef.current.scrollTo({
+      y: 0,
+      animated: true,
+    });
+    setVisibleForm(true);
   };
 
-  const infoKursi = idKursi => {
-    console.log('Info Kursi id:', idKursi);
-    console.log('penumpang :', penumpang);
-    navigation.navigate('DetailPenumpang');
+  const infoKursi = dtreservasiId => {
+    //console.log('Info Kursi id:', dtreservasiId);
+    fetch(API_URL + 'reservasi/info_kursi/' + dtreservasiId, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(resp => resp.json())
+      .then(json => {
+        //console.log(json);
+        //setPenumpang(json);
+        navigation.navigate('DetailPenumpang', {data: json});
+      })
+      .catch(error => console.error(error))
+      .finally(() => setLoading(false));
+  };
+
+  const editKursi = dtreservasiId => {
+    //console.log('Info Kursi id:', dtreservasiId);
+    fetch(API_URL + 'reservasi/info_kursi/' + dtreservasiId, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(resp => resp.json())
+      .then(json => {
+        //console.log(json);
+        //setPenumpang(json);
+        navigation.navigate('EditPenumpang', {data: json, priceList: price});
+      })
+      .catch(error => console.error(error))
+      .finally(() => setLoading(false));
   };
 
   let Sususnankursi = () => {
     if (itemJadwal == null) {
-      return (
-        <View style={styles.kolom}>
-          <View style={styles.sheat}>
-            <Text style={styles.sheat_number}>14</Text>
-            <Text style={styles.name}>kosong</Text>
-            <View style={styles.sandaran}></View>
-          </View>
-          <View style={styles.sheat_blank}></View>
-          <View style={styles.sheat_blank}></View>
-          <View style={styles.sheat}>
-            <Text
-              style={{fontSize: 14, color: Colors.black, fontWeight: 'bold'}}>
-              SOPIR
-            </Text>
-            <View style={styles.sandaran}></View>
-          </View>
-        </View>
-      );
+      return <View style={styles.kolom}></View>;
     } else {
       return (
         <>
@@ -347,7 +386,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                 ) : data.penumpang1.css_kursi == 'renderkursibook' ? (
                   <TouchableOpacity
                     style={jewelStyle(data.col1)}
-                    onPress={() => infoKursi(data.col2)}>
+                    onPress={() => editKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -373,10 +412,68 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                         source={require('../../images/ic_jp_tunai.png')}></Image>
                     </View>
                   </TouchableOpacity>
+                ) : data.penumpang1.css_kursi == 'renderkursibooktransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col1)}
+                    onPress={() => editKursi(data.penumpang1.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_pesan1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col1}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang1.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
+                ) : data.penumpang1.css_kursi == 'renderkursikonfirmtransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col1)}
+                    onPress={() => editKursi(data.penumpang1.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_konfirm1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col1}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang1.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     style={jewelStyle(data.col1)}
-                    onPress={() => infoKursi(data.col1)}>
+                    onPress={() => infoKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -421,7 +518,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                 ) : data.penumpang2.css_kursi == 'renderkursibook' ? (
                   <TouchableOpacity
                     style={jewelStyle(data.col2)}
-                    onPress={() => infoKursi(data.col2)}>
+                    onPress={() => editKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -447,10 +544,68 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                         source={require('../../images/ic_jp_tunai.png')}></Image>
                     </View>
                   </TouchableOpacity>
+                ) : data.penumpang2.css_kursi == 'renderkursibooktransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col2)}
+                    onPress={() => editKursi(data.penumpang2.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_pesan1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col2}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang2.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
+                ) : data.penumpang2.css_kursi == 'renderkursikonfirmtransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col2)}
+                    onPress={() => editKursi(data.penumpang2.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_konfirm1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col2}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang2.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     style={jewelStyle(data.col2)}
-                    onPress={() => infoKursi(data.col2)}>
+                    onPress={() => infoKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -494,7 +649,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                 ) : data.penumpang3.css_kursi == 'renderkursibook' ? (
                   <TouchableOpacity
                     style={jewelStyle(data.col3)}
-                    onPress={() => infoKursi(data.col3)}>
+                    onPress={() => editKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -520,10 +675,68 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                         source={require('../../images/ic_jp_tunai.png')}></Image>
                     </View>
                   </TouchableOpacity>
+                ) : data.penumpang3.css_kursi == 'renderkursibooktransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col3)}
+                    onPress={() => editKursi(data.penumpang3.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_pesan1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col3}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang3.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
+                ) : data.penumpang3.css_kursi == 'renderkursikonfirmtransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col3)}
+                    onPress={() => editKursi(data.penumpang3.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_konfirm1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col3}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang3.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     style={jewelStyle(data.col3)}
-                    onPress={() => infoKursi(data.col3)}>
+                    onPress={() => infoKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -578,8 +791,8 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                   </TouchableOpacity>
                 ) : data.penumpang4.css_kursi == 'renderkursibook' ? (
                   <TouchableOpacity
-                    style={jewelStyle(data.col2)}
-                    onPress={() => infoKursi(data.col2)}>
+                    style={jewelStyle(data.col4)}
+                    onPress={() => editKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -605,10 +818,68 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
                         source={require('../../images/ic_jp_tunai.png')}></Image>
                     </View>
                   </TouchableOpacity>
+                ) : data.penumpang4.css_kursi == 'renderkursibooktransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col4)}
+                    onPress={() => editKursi(data.penumpang4.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_pesan1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col4}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang4.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
+                ) : data.penumpang4.css_kursi == 'renderkursikonfirmtransit' ? (
+                  <TouchableOpacity
+                    style={jewelStyle(data.col4)}
+                    onPress={() => editKursi(data.penumpang4.id)}>
+                    <View style={styles.ruteKursi}>
+                      <Text>{data.rute}</Text>
+                    </View>
+                    <ImageBackground
+                      source={require('../../images/kursi_konfirm1.gif')}
+                      resizeMode="stretch"
+                      style={styles.imageBackground}>
+                      <View style={styles.numberBooked}>
+                        <Text style={{fontSize: 10, fontWeight: 'bold'}}>
+                          {data.col4}
+                        </Text>
+                      </View>
+                      <Text style={styles.name}>
+                        {data.penumpang4.nama_penumpang}
+                      </Text>
+                    </ImageBackground>
+                    <View style={styles.modeBayar}>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tiket.png')}></Image>
+                      <Image
+                        style={{width: 20, height: 20}}
+                        source={require('../../images/ic_jp_tunai.png')}></Image>
+                    </View>
+                  </TouchableOpacity>
                 ) : (
                   <TouchableOpacity
                     style={jewelStyle(data.col4)}
-                    onPress={() => infoKursi(data.col4)}>
+                    onPress={() => infoKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
                       <Text>{data.rute}</Text>
                     </View>
@@ -643,15 +914,9 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
     }
   };
 
-  const [visibleForm, setVisibleForm] = useState(false);
   const [openPrice, setOpenPrice] = useState(false);
   const [valuePrice, setValuePrice] = useState(null);
-  const [price, setPrice] = useState([
-    {label: 'UMUM Rp.85.000', value: '85.000'},
-    {label: 'Setia Rp.650.000', value: '650.000'},
-    {label: 'Balita Rp.50.000', value: '5.000'},
-    {label: 'Return Rp.150.000', value: '155.000'},
-  ]);
+  const [price, setPrice] = useState([]);
   const [openAngkutan, setOpenAngkutan] = useState(false);
   const [valueAngkutan, setValueAngkutan] = useState(null);
   const [angkutan, setAngkutan] = useState([
@@ -664,12 +929,27 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
   const [telepon, setTelepon] = useState(null);
   const [namaPemesan, setNamaPemesan] = useState(null);
   const [keterangan, setKeterangan] = useState(null);
-  const [hargaTiket, setHargaTiket] = useState(null);
+  const [hargaTiket, setHargaTiket] = useState([]);
+  const [discount, setDiscountt] = useState(null);
   const [outlet, setOutlet] = useState(null);
 
   useEffect(() => {
+    // const focusHandler = navigation.addListener('focus', () => {
+    //   console.log('gowback()');
+    //   if (idJadwal.length != 0) {
+    //     console.log('Jadwalid:', idDtJadwal);
+    //     getDetailJadwal(idDtJadwal);
+    //   }
+    // });
+
     getOutletStart();
   }, []);
+
+  // useFocusEffect(
+  //   useCallback(() => {
+  //     console.log('aku mundur');
+  //   }, [])
+  // )
 
   const inputHandler = (key, text) => {
     const _inputs = [...kursiSelected];
@@ -684,25 +964,126 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
     console.log('count:', kursiSelected.length);
   };
 
-  const penumpangSama = () =>{
+  const penumpangSama = () => {
     setSelection(!isSelected);
-    if(!isSelected){
+    if (!isSelected) {
       kursiSelected.map((item, i) => {
         const _inputs = [...kursiSelected];
         _inputs[i].value = namaPemesan;
         _inputs[i].key = item.key;
         setKursiSelected(_inputs);
       });
-    }else{
+    } else {
       kursiSelected.map((item, i) => {
         const _inputs = [...kursiSelected];
-        _inputs[i].value = "";
+        _inputs[i].value = '';
         _inputs[i].key = item.key;
         setKursiSelected(_inputs);
       });
     }
-    
-  }
+  };
+
+  const booking = () => {
+    setLoading(true);
+    let start_trip = initStartOutlet().id;
+    let end_trip = initEndOutlet().id;
+
+    let data = JSON.stringify({
+      tgl_keberangkatan: Moment(date).format('yyyy-MM-DD'),
+      jam_keberangkatan: initJadwal().jam_berangkat,
+      start_trip: initStartOutlet().id,
+      end_trip: initEndOutlet().id,
+      id_jadwal: idJadwal,
+      id_dt_jadwal: idDtJadwal,
+      kd_jadwal: initJadwal().kd_jadwal,
+      telp_pemesan: telepon,
+      email_pemesan: '',
+      nama_pemesan: namaPemesan,
+      keterangan: keterangan,
+      kd_voucher: '',
+      harga_tiket: hargaTiket,
+      id_angkutan: outlet,
+      discount_promo: '0',
+      discount_voucher: '0',
+      agen_pemesan: 'SADEWA',
+      outlet_pemesan: 'BUBAT',
+      kd_outlet: 'BUBAT',
+      created_by: 'USR004',
+      psgArray: kursiSelected,
+    });
+
+    //console.log(data);
+
+    if (start_trip != null && end_trip != null) {
+      fetch(API_URL + 'reservasi/booking', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      })
+        .then(resp => resp.json())
+        .then(json => {
+          console.log('-----------------------');
+          console.log({json});
+          getDetailJadwal(idDtJadwal);
+        })
+        .catch(error => console.error(error))
+        .finally(() => setLoading(false));
+    }
+  };
+
+  const goshow = () => {
+    setLoading(true);
+    let start_trip = initStartOutlet().id;
+    let end_trip = initEndOutlet().id;
+
+    let data = JSON.stringify({
+      tgl_keberangkatan: Moment(date).format('yyyy-MM-DD'),
+      jam_keberangkatan: initJadwal().jam_berangkat,
+      start_trip: initStartOutlet().id,
+      end_trip: initEndOutlet().id,
+      id_jadwal: idJadwal,
+      id_dt_jadwal: idDtJadwal,
+      kd_jadwal: initJadwal().kd_jadwal,
+      telp_pemesan: telepon,
+      email_pemesan: '',
+      nama_pemesan: namaPemesan,
+      keterangan: keterangan,
+      kd_voucher: '',
+      harga_tiket: hargaTiket,
+      id_angkutan: outlet,
+      discount_promo: '0',
+      discount_voucher: '0',
+      agen_pemesan: 'SADEWA',
+      outlet_pemesan: 'BUBAT',
+      kd_outlet: 'BUBAT',
+      created_by: 'USR004',
+      psgArray: kursiSelected,
+    });
+
+    console.log(data);
+
+    if (start_trip != null && end_trip != null) {
+      fetch(API_URL + 'reservasi/goshow', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      })
+        .then(resp => resp.json())
+        .then(json => {
+          console.log('-----------------------');
+          console.log({json});
+          getDetailJadwal(idDtJadwal);
+        })
+        .catch(error => console.error(error))
+        .finally(() => setLoading(false));
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -788,6 +1169,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
           onConfirm={date => {
             setOpen(false);
             setDate(date);
+            setVisibleForm(false);
           }}
           onCancel={() => {
             setOpen(false);
@@ -800,6 +1182,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
           transparent={false}
           visible={modalStart}
           onRequestClose={() => {
+            setVisibleForm(false);
             setModalStart(!modalStart);
           }}>
           <View style={{bottom: 0}}>
@@ -831,6 +1214,7 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
           transparent={false}
           visible={modalEnd}
           onRequestClose={() => {
+            setVisibleForm(false);
             setModalEnd(!modalEnd);
           }}>
           <View style={{bottom: 0}}>
@@ -915,183 +1299,210 @@ const NewTiketScreen = ({navigation}: {navigation: any}) => {
           </View>
         </Modal>
       </View>
-      <ScrollView style={{marginBottom: 60}}>
-        <View style={styles.car}>
-          <Legent />
-          <Sususnankursi />
-          <View>
-            <View
-              style={{
-                marginTop: 10,
-                borderRadius: 10,
-                backgroundColor: Colors.white,
-              }}>
-              <View
-                style={{
-                  height: 50,
-                  justifyContent: 'center',
-                  borderBottomWidth: 0.5,
-                }}>
-                <Text
-                  style={{marginLeft: 16, fontSize: 14, fontWeight: 'bold'}}>
-                  DATA PEMESAN
-                </Text>
-              </View>
-              <View style={{padding: 10}}>
-                <View style={{marginTop: 2}} />
-                <Button title="Check" onPress={check} />
-                <TextInput
-                  style={{backgroundColor: Colors.white}}
-                  label="No Telepon Pemesan"
-                  left={<TextInput.Icon icon="cellphone" />}
-                  value={telepon}
-                  onChangeText={newText => setTelepon(newText)}
-                />
-                <TextInput
-                  style={{backgroundColor: Colors.white}}
-                  label="Nama Pemesan"
-                  left={<TextInput.Icon icon="account-box" />}
-                  value={namaPemesan}
-                  onChangeText={newText => setNamaPemesan(newText)}
-                />
-                <TextInput
-                  style={{backgroundColor: Colors.white}}
-                  label="Keterangan"
-                  left={<TextInput.Icon icon="information" />}
-                  value={keterangan}
-                  onChangeText={newText => setKeterangan(newText)}
-                />
-
-                <Text style={{marginLeft: 10}}>Jenis Discount</Text>
-                <Dropdown
-                  style={styles.dropdown}
-                  placeholderStyle={styles.placeholderStyle}
-                  selectedTextStyle={styles.selectedTextStyle}
-                  inputSearchStyle={styles.inputSearchStyle}
-                  iconStyle={styles.iconStyle}
-                  data={price}
-                  search
-                  maxHeight={300}
-                  labelField="label"
-                  valueField="value"
-                  placeholder="Select item"
-                  searchPlaceholder="Search..."
-                  value={value}
-                  onChange={item => {
-                    setHargaTiket(item.value);
-                  }}
-                  renderLeftIcon={() => (
-                    <IconFa5
-                      style={styles.icon}
-                      color="black"
-                      name="money-bill"
-                      size={20}
-                    />
-                  )}
-                />
-
-                <Text style={{marginLeft: 10}}>Jenis Angkutan</Text>
-                <Dropdown
-                  style={styles.dropdown}
-                  placeholderStyle={styles.placeholderStyle}
-                  selectedTextStyle={styles.selectedTextStyle}
-                  inputSearchStyle={styles.inputSearchStyle}
-                  iconStyle={styles.iconStyle}
-                  data={angkutan}
-                  search
-                  maxHeight={300}
-                  labelField="label"
-                  valueField="value"
-                  placeholder="Select item"
-                  searchPlaceholder="Search..."
-                  value={value}
-                  onChange={item => {
-                    setOutlet(item.value);
-                  }}
-                  renderLeftIcon={() => (
-                    <IconFa5
-                      style={styles.icon}
-                      color="black"
-                      name="caravan"
-                      size={20}
-                    />
-                  )}
-                />
+      <ScrollView style={{marginBottom: 80}} ref={scrollRef}>
+        {loading ? (
+          <ActivityIndicator size="large" />
+        ) : (
+          <View style={styles.car}>
+            {visibleForm ? (
+              <>
+                <Legent />
+                <Sususnankursi />
                 <View
                   style={{
+                    marginTop: 10,
+                    borderRadius: 10,
                     backgroundColor: Colors.white,
-                    marginBottom: 10,
-                  }}></View>
-              </View>
-            </View>
-            <View
-              style={{
-                marginTop: 10,
-                borderRadius: 10,
-                backgroundColor: Colors.white,
-              }}>
-              <View
-                style={{
-                  height: 50,
-                  justifyContent: 'center',
-                  borderBottomWidth: 0.5,
-                }}>
-                <Text
-                  style={{marginLeft: 16, fontSize: 14, fontWeight: 'bold'}}>
-                  DATA PENUMPANG
-                </Text>
-              </View>
-              <View style={{padding: 10}}>
-                <View
-                  style={{
-                    height: 50,
-                    paddingLeft: 10,
-                    backgroundColor: Colors.white,
-
-                    borderBottomWidth: 0.5,
-                    borderBottomColor: 'black',
-                    flexDirection: 'row',
-                    alignItems: 'center',
                   }}>
-                  <Checkbox
-                    status={isSelected ? 'checked' : 'unchecked'}
-                    onPress={() => {
-                      penumpangSama();
-                    }}
-                  />
-                  <Text style={{marginLeft: 10}}>
-                    Centang jika nama penumpang sama
-                  </Text>
-                </View>
+                  <View
+                    style={{
+                      height: 50,
+                      justifyContent: 'center',
+                      borderBottomWidth: 0.5,
+                    }}>
+                    <Text
+                      style={{
+                        marginLeft: 16,
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                      }}>
+                      DATA PEMESAN
+                    </Text>
+                  </View>
+                  <View style={{padding: 10}}>
+                    <View style={{marginTop: 2}} />
+                    <View
+                      style={{
+                        flexDirection: 'row',
+                        justifyContent: 'space-between',
+                      }}>
+                      <TextInput
+                        keyboardType="number-pad"
+                        style={{backgroundColor: Colors.white, width: '60%'}}
+                        label="Telepon Pemesan"
+                        left={<TextInput.Icon icon="cellphone" />}
+                        value={telepon}
+                        onChangeText={newText => setTelepon(newText)}
+                      />
+                      <TouchableOpacity style={styles.buttonCheck}>
+                        <Text style={{color: 'white'}}>Check Member</Text>
+                      </TouchableOpacity>
+                      {/* <Button title="Check Member" onPress={check} /> */}
+                    </View>
 
-                {kursiSelected.map((input, key) => (
-                  <TextInput
-                    key={key}
-                    style={{backgroundColor: Colors.white}}
-                    label={'Nama penumpang ' + input.key}
-                    left={<TextInput.Icon icon="account-box" />}
-                    value={input.value}
-                    onChangeText={text => inputHandler(input.key, text)}
-                  />
-                ))}
-              </View>
-            </View>
+                    <TextInput
+                      style={{backgroundColor: Colors.white}}
+                      label="Nama Pemesan"
+                      left={<TextInput.Icon icon="account-box" />}
+                      value={namaPemesan}
+                      onChangeText={newText => setNamaPemesan(newText)}
+                    />
+                    <TextInput
+                      style={{backgroundColor: Colors.white}}
+                      label="Keterangan"
+                      left={<TextInput.Icon icon="information" />}
+                      value={keterangan}
+                      onChangeText={newText => setKeterangan(newText)}
+                    />
+
+                    <Text style={{marginLeft: 10}}>Jenis Discount</Text>
+                    <Dropdown
+                      style={styles.dropdown}
+                      placeholderStyle={styles.placeholderStyle}
+                      selectedTextStyle={styles.selectedTextStyle}
+                      inputSearchStyle={styles.inputSearchStyle}
+                      iconStyle={styles.iconStyle}
+                      data={price}
+                      search
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select item"
+                      searchPlaceholder="Search..."
+                      value={value}
+                      onChange={item => {
+                        setHargaTiket(item);
+                      }}
+                      renderLeftIcon={() => (
+                        <IconFa5
+                          style={styles.icon}
+                          color="black"
+                          name="money-bill"
+                          size={20}
+                        />
+                      )}
+                    />
+
+                    <Text style={{marginLeft: 10}}>Jenis Angkutan</Text>
+                    <Dropdown
+                      style={styles.dropdown}
+                      placeholderStyle={styles.placeholderStyle}
+                      selectedTextStyle={styles.selectedTextStyle}
+                      inputSearchStyle={styles.inputSearchStyle}
+                      iconStyle={styles.iconStyle}
+                      data={angkutan}
+                      search
+                      maxHeight={300}
+                      labelField="label"
+                      valueField="value"
+                      placeholder="Select item"
+                      searchPlaceholder="Search..."
+                      value={value}
+                      onChange={item => {
+                        setOutlet(item.value);
+                      }}
+                      renderLeftIcon={() => (
+                        <IconFa5
+                          style={styles.icon}
+                          color="black"
+                          name="caravan"
+                          size={20}
+                        />
+                      )}
+                    />
+                    <View
+                      style={{
+                        backgroundColor: Colors.white,
+                        marginBottom: 10,
+                      }}></View>
+                  </View>
+                </View>
+                <View
+                  style={{
+                    marginTop: 10,
+                    borderRadius: 10,
+                    backgroundColor: Colors.white,
+                  }}>
+                  <View
+                    style={{
+                      height: 50,
+                      justifyContent: 'center',
+                      borderBottomWidth: 0.5,
+                    }}>
+                    <Text
+                      style={{
+                        marginLeft: 16,
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                      }}>
+                      DATA PENUMPANG
+                    </Text>
+                  </View>
+                  <View style={{padding: 10}}>
+                    <View
+                      style={{
+                        height: 50,
+                        paddingLeft: 10,
+                        backgroundColor: Colors.white,
+
+                        borderBottomWidth: 0.5,
+                        borderBottomColor: 'black',
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                      }}>
+                      <Checkbox
+                        status={isSelected ? 'checked' : 'unchecked'}
+                        onPress={() => {
+                          penumpangSama();
+                        }}
+                      />
+                      <Text style={{marginLeft: 10}}>
+                        Centang jika nama penumpang sama
+                      </Text>
+                    </View>
+
+                    {kursiSelected.map((input, key) => (
+                      <TextInput
+                        key={key}
+                        style={{backgroundColor: Colors.white}}
+                        label={'Nama penumpang ' + input.key}
+                        left={<TextInput.Icon icon="account-box" />}
+                        value={input.value}
+                        onChangeText={text => inputHandler(input.key, text)}
+                      />
+                    ))}
+                  </View>
+                </View>
+              </>
+            ) : (
+              <></>
+            )}
           </View>
-        </View>
+        )}
       </ScrollView>
 
       <View style={styles.bottomView}>
-        <View style={{flexDirection: 'row'}}>
+        <View style={{flexDirection: 'row'}} >
           <TouchableOpacity
             style={{backgroundColor: 'red', padding: 10, marginLeft: 10}}
-            onPress={() => navigation.navigate('Penumpang')}>
+            onPress={() => goshow()}>
             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
               GO SHOW
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={{backgroundColor: 'red', padding: 10, marginLeft: 10}}
-            onPress={() => navigation.navigate('Paket')}>
+            onPress={() => booking()}>
             <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
               BOOKING
             </Text>
@@ -1176,7 +1587,7 @@ const styles = StyleSheet.create({
 
   car: {
     paddingVertical: 10,
-    paddingHorizontal: 30,
+    paddingHorizontal: 20,
     //alignItems: 'center',
   },
   sheat: {
@@ -1303,6 +1714,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'lightgray',
+  },
+  buttonCheck: {
+    width: '40%',
+    height: 40,
+    margin: 5,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 export default NewTiketScreen;

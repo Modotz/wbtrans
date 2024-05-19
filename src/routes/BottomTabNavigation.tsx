@@ -5,9 +5,9 @@ import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityI
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 
 import HomeScreen from '../views/home/HomeScreen';
-import ReservasiScreen from '../views/reservasi/ReservasiScreen';
-import AppsScreen from '../views/apps/AppsScreen';
-
+import TiketScreen from '../views/tiket/TiketScreen';
+import PaketScreen from '../views/paket/PaketScreen';
+import profileScreen from '../views/profile/ProfileScreen';
 
 //const Tab = createBottomTabNavigator();
 const Tab = createMaterialBottomTabNavigator();
@@ -28,42 +28,42 @@ function BottomTabNavigation() {
             />
           ),
         }} />
-        <Tab.Screen name="Reservasi" 
-        component={ReservasiScreen} 
+        <Tab.Screen name="Tiket" 
+        component={TiketScreen} 
         options={{
-          tabBarLabel: 'Reservasi',
+          tabBarLabel: 'Tiket',
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons
-              name="apps"
+              name="card-bulleted-outline"
               color={color}
               size={25}
             />
           ),
         }}/>
-        <Tab.Screen name="Apps" 
-        component={AppsScreen} 
+        <Tab.Screen name="Paket" 
+        component={PaketScreen} 
         options={{
-          tabBarLabel: 'Apps',
+          tabBarLabel: 'Paket',
           tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons
-              name="account"
+              name="gift"
               color={color}
               size={25}
             />
           ),
         }}/>
-        {/* <Tab.Screen name="Profile" 
-        component={ProfileScreen} 
+        <Tab.Screen name="Profile" 
+        component={profileScreen} 
         options={{
           tabBarLabel: 'Profile',
-          tabBarIcon: ({ color, size }) => (
+          tabBarIcon: ({ color }) => (
             <MaterialCommunityIcons
               name="account-circle"
               color={color}
               size={25}
             />
           ),
-        }}/> */}
+        }}/>
         
       </Tab.Navigator>
 
