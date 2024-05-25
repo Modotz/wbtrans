@@ -29,7 +29,6 @@ import {
   ALIGN,
 } from 'tp-react-native-bluetooth-printer';
 
-
 export default function DetailPenumpangScreen({route, navigation}) {
   const {data} = route.params;
 
@@ -174,8 +173,8 @@ export default function DetailPenumpangScreen({route, navigation}) {
     AsyncStorage.getItem('outlet').then(value => setCsoOutlet(value));
     AsyncStorage.getItem('kota').then(value => setCsoKota(value));
     AsyncStorage.getItem('bleMac').then(value => setBleMac(value));
-    BluetoothManager.connect(bleMac); 
-    
+    BluetoothManager.connect(bleMac);
+
     //console.log('dtreservasi:',data);
     console.log('dtreservasi:');
     setPenumpang(data);
@@ -244,7 +243,10 @@ export default function DetailPenumpangScreen({route, navigation}) {
           'Kelas : ' + json.kelas + '\n\r',
           {},
         );
-        await BluetoothEscposPrinter.printText('By: '+ json.jns_pembayaran + '\n\r', {});
+        await BluetoothEscposPrinter.printText(
+          'By: ' + json.jns_pembayaran + '\n\r',
+          {},
+        );
         await BluetoothEscposPrinter.printText(
           json.jam_keberangkatan + '\n\r',
           {},
@@ -306,10 +308,7 @@ export default function DetailPenumpangScreen({route, navigation}) {
           {},
         );
 
-        await BluetoothEscposPrinter.printText(
-          json.tgl_pelunasan + '\n\r',
-          {},
-        );
+        await BluetoothEscposPrinter.printText(json.tgl_pelunasan + '\n\r', {});
         await BluetoothEscposPrinter.printText(
           'Pencetak : ' + json.agen_pelunasan + '\n\r\n\r',
           {},
@@ -319,22 +318,16 @@ export default function DetailPenumpangScreen({route, navigation}) {
           {},
         );
 
-        if((json.vouchers).length > 0){
+        if (json.vouchers.length > 0) {
           await BluetoothEscposPrinter.printText(
             '-------------VOUCHER------------\n\r',
             {},
           );
 
-          if(json.jenis_tiket == "RETURN"){
-            await BluetoothEscposPrinter.printText(
-              'TIKET BALIK FREE\n\r',
-              {},
-            );
-          }else if(json.jenis_tiket == "SETIA"){
-            await BluetoothEscposPrinter.printText(
-              'LIST VOUCHER\n\r',
-              {},
-            );
+          if (json.jenis_tiket == 'RETURN') {
+            await BluetoothEscposPrinter.printText('TIKET BALIK FREE\n\r', {});
+          } else if (json.jenis_tiket == 'SETIA') {
+            await BluetoothEscposPrinter.printText('LIST VOUCHER\n\r', {});
           }
         }
         await BluetoothEscposPrinter.printText(
@@ -342,36 +335,30 @@ export default function DetailPenumpangScreen({route, navigation}) {
           {},
         );
 
-        json.vouchers.map((item) => {
-           BluetoothEscposPrinter.printText(
-            item.return_trip + '\n\r',
-            {},
-          );
-          BluetoothEscposPrinter.printText(
-            item.kd_voucher + '\n\r',
-            {},
-          );
-          BluetoothEscposPrinter.printText(
-            item.status_voucher + '\n\r',
-            {},
-          );
-          BluetoothEscposPrinter.printText(
-            'Berlaku Hingga\n\r',
-            {},
-          );
-          BluetoothEscposPrinter.printText(
-            item.period_expired + '\n\r',
-            {},
-          );
+        json.vouchers.map(item => {
+          BluetoothEscposPrinter.printText(item.return_trip + '\n\r', {});
+          BluetoothEscposPrinter.printText(item.kd_voucher + '\n\r', {});
+          BluetoothEscposPrinter.printText(item.status_voucher + '\n\r', {});
+          BluetoothEscposPrinter.printText('Berlaku Hingga\n\r', {});
+          BluetoothEscposPrinter.printText(item.period_expired + '\n\r', {});
         });
-        
+
         await BluetoothEscposPrinter.printText('\n\r\n\r\n\r', {});
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
-  }
+  };
 
-  const mutasi = () => {};
+  const mutasi = () => {
+    console.log('Mode mutasi');
+    
+    route.params.onGoBack({
+      mutasi : true,
+      message :'Mode Mutasi',
+      dt_reservasi_id :dtReservasiId
+    });
+    navigation.goBack();
+  };
 
   const unseat = () => {
     let dt_reservasi_id = dtReservasiId;
@@ -396,7 +383,12 @@ export default function DetailPenumpangScreen({route, navigation}) {
       .then(resp => resp.json())
       .then(async json => {
         console.log(json);
-        navigation.goBack(1);
+        route.params.onGoBack({
+          mutasi : false,
+          message :'Unseat Tiket',
+          id_dt_jadwal :penumpang.reservasi.id_dt_jadwal
+        });
+        navigation.goBack();
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
@@ -405,10 +397,10 @@ export default function DetailPenumpangScreen({route, navigation}) {
   const refund = () => {
     let dt_reservasi_id = dtReservasiId;
     let kd_reservasi = kdReservasi;
-    let jml_refund= jmlRefund;
-    let nominal_refund= nominalRefund;
-    let jns_refund= jnsRefund;
-    let alasan_refund= alasanRefund;
+    let jml_refund = jmlRefund;
+    let nominal_refund = nominalRefund;
+    let jns_refund = jnsRefund;
+    let alasan_refund = alasanRefund;
     let created_by = userId;
 
     let data = JSON.stringify({
@@ -433,7 +425,12 @@ export default function DetailPenumpangScreen({route, navigation}) {
       .then(resp => resp.json())
       .then(async json => {
         console.log(json);
-        navigation.goBack(1);
+        route.params.onGoBack({
+          mutasi : false,
+          message :'Refund Tiket',
+          id_dt_jadwal :penumpang.reservasi.id_dt_jadwal
+        });
+        navigation.goBack();
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
@@ -450,8 +447,8 @@ export default function DetailPenumpangScreen({route, navigation}) {
                 flexDirection: 'row',
                 height: 50,
                 alignItems: 'center',
-                justifyContent:"space-between",
-                marginHorizontal:20,
+                justifyContent: 'space-between',
+                marginHorizontal: 20,
               }}>
               <IconMa
                 style={{}}
@@ -459,23 +456,18 @@ export default function DetailPenumpangScreen({route, navigation}) {
                 name="airline-seat-recline-extra"
                 size={20}
               />
-              <Text style={{fontSize: 14, fontWeight: 'bold'}}>KURSI {penumpang.dt_reservasi.kursi}</Text>
-              <IconFa5
-                style={{}}
-                color="black"
-                name="calendar"
-                size={20}
-              />
-              <Text style={{fontSize: 14, fontWeight: 'bold'}}>{penumpang.reservasi.tgl_keberangkatan}</Text>
-              <IconFa5
-                style={{}}
-                color="black"
-                name="clock"
-                size={20}
-              />
-              <Text style={{fontSize: 14, fontWeight: 'bold'}}>{penumpang.reservasi.jam_keberangkatan}</Text>
+              <Text style={{fontSize: 14, fontWeight: 'bold'}}>
+                KURSI {penumpang.dt_reservasi.kursi}
+              </Text>
+              <IconFa5 style={{}} color="black" name="calendar" size={20} />
+              <Text style={{fontSize: 14, fontWeight: 'bold'}}>
+                {penumpang.reservasi.tgl_keberangkatan}
+              </Text>
+              <IconFa5 style={{}} color="black" name="clock" size={20} />
+              <Text style={{fontSize: 14, fontWeight: 'bold'}}>
+                {penumpang.reservasi.jam_keberangkatan}
+              </Text>
             </View>
-            
           </View>
         </View>
         <View
@@ -522,7 +514,9 @@ export default function DetailPenumpangScreen({route, navigation}) {
             </View>
             <View style={styles.containerObj}>
               <Text>Keterangan</Text>
-              <Text style={{fontWeight: '700'}}>{penumpang.dt_reservasi.keterangan}</Text>
+              <Text style={{fontWeight: '700'}}>
+                {penumpang.dt_reservasi.keterangan}
+              </Text>
             </View>
             <View style={styles.containerObj}>
               <Text>Drop Point</Text>
@@ -588,7 +582,7 @@ export default function DetailPenumpangScreen({route, navigation}) {
             <View style={styles.containerObj}>
               <Text>Waktu Boarding</Text>
               <Text style={{fontWeight: '700'}}>
-              {penumpang.reservasi.tgl_berangkat}
+                {penumpang.reservasi.tgl_berangkat}
               </Text>
             </View>
           </View>
@@ -642,15 +636,19 @@ export default function DetailPenumpangScreen({route, navigation}) {
           <TouchableOpacity style={styles.buttonBayar} onPress={() => cetak()}>
             <Text style={{color: 'white'}}>CETAK</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.buttonMutasi} onPress={() => setModalUnseatVisible(true)}>
+          <TouchableOpacity
+            style={styles.buttonMutasi}
+            onPress={() => setModalUnseatVisible(true)}>
             <Text style={{color: 'red'}}>UNSEAT</Text>
           </TouchableOpacity>
         </View>
         <View style={styles.boxRow}>
-        <TouchableOpacity style={styles.buttonMutasi} onPress={() => setModalRefundVisible(true)}>
+          <TouchableOpacity
+            style={styles.buttonMutasi}
+            onPress={() => setModalRefundVisible(true)}>
             <Text style={{color: 'red'}}>REFUND</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.buttonMutasi}>
+          <TouchableOpacity style={styles.buttonMutasi} onPress={()=> mutasi()}>
             <Text style={{color: 'red'}}>MUTASI</Text>
           </TouchableOpacity>
         </View>
@@ -746,7 +744,6 @@ export default function DetailPenumpangScreen({route, navigation}) {
             </View>
           </View>
         </Modal>
-
       </ScrollView>
     </SafeAreaView>
   );

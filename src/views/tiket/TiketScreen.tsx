@@ -2,7 +2,6 @@ import React, {useState, useEffect, useRef, useCallback} from 'react';
 //import { useFocusEffect } from "@react-navigation/native";
 import {
   View,
-  Text,
   SafeAreaView,
   StyleSheet,
   TouchableOpacity,
@@ -17,9 +16,11 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import {Card, Text} from 'react-native-paper';
 import {Dropdown} from 'react-native-element-dropdown';
 import {TextInput, Checkbox} from 'react-native-paper';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
+import colors from '../../constants/Colors';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import DatePicker from 'react-native-date-picker';
 import IconFa5 from 'react-native-vector-icons/dist/FontAwesome5';
@@ -30,8 +31,13 @@ import TicketForm from '../../components/TicketForm';
 
 import {API_URL} from '../../constants/Repositories';
 
-const TiketScreen = ({navigation}: {navigation: any}) => {
+const TiketScreen = ({navigation}: {navigation: any}, route) => {
   const [loading, setLoading] = useState(true);
+  const [isMutasi, setIsMutasi] = useState(false);
+  const [lastDtReservasiId, setLastDtReservasiId] = useState('');
+  const [message, setMessage] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+
   const [visibleForm, setVisibleForm] = useState(false);
   const scrollRef = useRef();
   // State Account
@@ -58,12 +64,38 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
   const [idJadwal, setIdJadwal] = useState([]);
   const [idDtJadwal, setIdDtJadwal] = useState([]);
   const [dtJadwalId, setDtJadwalId] = useState('');
+  const [kendaraan, setKendaraan] = useState([
+    {
+      id: "0",
+      kd_kendaraan: "",
+      plat_nomor: "",
+      kd_layout: "",
+      jml_dek: "",
+      kapasitas: ""
+      },
+  ]);
+
+  const [keberangkatan, setKeberangkatan] = useState(
+    []
+  );
+
+  const [sopir, setSopir] = useState([
+    {
+      id: "0",
+      kd_sopir: "",
+      nrp: "",
+      nama: ""
+      },
+  ]);
+
+  const [kdKendaraan, setKdKendaraan] = useState('');
+  const [kdSopir, setKdSopir] = useState('');
 
   const [refreshing, setRefreshing] = React.useState(false);
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-    console.log(dtJadwalId)
-    if(dtJadwalId != ''){
+    console.log(dtJadwalId);
+    if (dtJadwalId != '') {
       getDetailJadwal(dtJadwalId);
     }
     setRefreshing(false);
@@ -148,6 +180,7 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const getJadwal = () => {
+    console.log('getJadwal----------------');
     setVisibleForm(false);
     var tanggal = Moment(date).format('yyyy-MM-DD');
     var startTrip = initStartOutlet().id;
@@ -170,6 +203,7 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
       })
         .then(resp => resp.json())
         .then(json => {
+          //console.log(json.jadwal);
           setJadwal(json.jadwal);
           setModalJadwal(true);
         })
@@ -190,8 +224,12 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
     setLoading(true);
     setDtJadwalId(id);
     console.log('getDetailJadwal:', id);
+    var start_trip = initStartOutlet().id;
+    var end_trip = initEndOutlet().id;
+    var kd_trip = start_trip + '-' + end_trip;
+
     if (id != null || id != '') {
-      fetch(API_URL + 'reservasi/details/' + id, {
+      fetch(API_URL + 'reservasi/details/' + id + '/' + kd_trip, {
         method: 'GET',
         headers: {
           Accept: 'application/json',
@@ -205,6 +243,11 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
           setIdDtJadwal(json.jadwal.id);
           setItemJadwal(json.dt_layout);
           setPrice(json.harga_tiket);
+          setKendaraan(json.kendaraan);
+          setSopir(json.sopir);
+          setKeberangkatan(json.keberangkatan);
+          // setKdKendaraan(json.keberangkatan.kd_kendaraan);
+          // setKdSopir(json.keberangkatan.kd_sopir);
           clearKursi();
           clearForm();
           setLoading(false);
@@ -273,11 +316,11 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
     setModalEnd(!modalEnd);
   };
 
-  const refresh = () =>{
-    if(dtJadwalId != ''){
+  const refresh = () => {
+    if (dtJadwalId != '') {
       getDetailJadwal(dtJadwalId);
     }
-  }
+  };
 
   // State for layouts
   const [penumpang, setPenumpang] = useState([]);
@@ -307,25 +350,62 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
   };
 
   const setKursi = idKursi => {
-    const result = penumpang.find(element => element == parseInt(idKursi));
-    console.log('result:', result);
-    if (result) {
-      console.log('ada');
-      setSelected(false);
-      setPenumpang(penumpang => penumpang.filter(i => i !== parseInt(idKursi)));
-      //console.log(kursiSelected);
-      const _inputs = kursiSelected.filter(
-        index => index.key != parseInt(idKursi),
-      );
-      console.log(_inputs);
-      setKursiSelected(_inputs);
+    if (isMutasi) {
+      let last_dt_reservasi_id = '';
+      let new_nomor_kursi = idKursi;
+      let id_dt_jadwal = idDtJadwal;
+      AsyncStorage.getItem('last_dt_reservasi_id').then(value => {
+        setLastDtReservasiId(value), (last_dt_reservasi_id = value);
+      });
+
+      var data = JSON.stringify({
+        last_dt_reservasi_id: lastDtReservasiId,
+        new_nomor_kursi,
+        id_dt_jadwal,
+        created_by: userId,
+      });
+
+      console.log(data);
+
+      fetch(API_URL + 'reservasi/mutasi', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: data,
+      })
+        .then(resp => resp.json())
+        .then(json => {
+          console.log(json);
+          setIsMutasi(false);
+          getDetailJadwal(id_dt_jadwal);
+        })
+        .catch(error => console.error(error))
+        .finally(() => setLoading(false));
     } else {
-      console.log('gak ada');
-      setSelected(true);
-      setPenumpang(penumpang => [...penumpang, parseInt(idKursi)]);
-      const _inputs = [...kursiSelected];
-      _inputs.push({key: parseInt(idKursi), value: ''});
-      setKursiSelected(_inputs);
+      const result = penumpang.find(element => element == parseInt(idKursi));
+      console.log('result:', result);
+      if (result) {
+        console.log('ada');
+        setSelected(false);
+        setPenumpang(penumpang =>
+          penumpang.filter(i => i !== parseInt(idKursi)),
+        );
+        //console.log(kursiSelected);
+        const _inputs = kursiSelected.filter(
+          index => index.key != parseInt(idKursi),
+        );
+        console.log(_inputs);
+        setKursiSelected(_inputs);
+      } else {
+        console.log('gak ada');
+        setSelected(true);
+        setPenumpang(penumpang => [...penumpang, parseInt(idKursi)]);
+        const _inputs = [...kursiSelected];
+        _inputs.push({key: parseInt(idKursi), value: ''});
+        setKursiSelected(_inputs);
+      }
     }
   };
 
@@ -363,7 +443,24 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
       .then(json => {
         //console.log(json);
         //setPenumpang(json);
-        navigation.navigate('DetailPenumpang', {data: json});
+        //navigation.navigate('DetailPenumpang', {data: json});
+        navigation.navigate('DetailPenumpang', {
+          data: json,
+          onGoBack: data => {
+            // Callback function to handle data from ScreenB
+            console.log(data.message);
+            if (data.mutasi == true) {
+              setIsMutasi(data.mutasi);
+              setMessage(data.message);
+              AsyncStorage.setItem(
+                'last_dt_reservasi_id',
+                data.dt_reservasi_id,
+              );
+            } else {
+              getDetailJadwal(data.id_dt_jadwal);
+            }
+          },
+        });
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
@@ -380,9 +477,25 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
     })
       .then(resp => resp.json())
       .then(json => {
-        //console.log(json);
-        //setPenumpang(json);
-        navigation.navigate('EditPenumpang', {data: json, priceList: price});
+        navigation.navigate('EditPenumpang', {
+          id_dt_jadwal: idDtJadwal,
+          data: json,
+          priceList: price,
+          onGoBack: data => {
+            // Callback function to handle data from ScreenB
+            console.log(data.message);
+            if (data.mutasi == true) {
+              setIsMutasi(data.mutasi);
+              setMessage(data.message);
+              AsyncStorage.setItem(
+                'last_dt_reservasi_id',
+                data.dt_reservasi_id,
+              );
+            } else {
+              getDetailJadwal(data.id_dt_jadwal);
+            }
+          },
+        });
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
@@ -415,7 +528,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col1)}
                     onPress={() => editKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang1.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang1.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan.gif')}
@@ -444,7 +559,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col1)}
                     onPress={() => editKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang1.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang1.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan1.gif')}
@@ -473,7 +590,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col1)}
                     onPress={() => editKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang1.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang1.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm1.gif')}
@@ -502,7 +621,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col1)}
                     onPress={() => infoKursi(data.penumpang1.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang1.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang1.kd_trip}
+                      </Text>
                     </View>
 
                     <ImageBackground
@@ -547,7 +668,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col2)}
                     onPress={() => editKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang2.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang2.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan.gif')}
@@ -576,7 +699,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col2)}
                     onPress={() => editKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang2.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang2.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan1.gif')}
@@ -605,7 +730,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col2)}
                     onPress={() => editKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang2.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang2.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm1.gif')}
@@ -634,7 +761,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col2)}
                     onPress={() => infoKursi(data.penumpang2.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang2.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang2.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm.gif')}
@@ -678,7 +807,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col3)}
                     onPress={() => editKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang3.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang3.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan.gif')}
@@ -707,7 +838,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col3)}
                     onPress={() => editKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang3.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang3.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan1.gif')}
@@ -736,7 +869,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col3)}
                     onPress={() => editKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang3.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang3.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm1.gif')}
@@ -765,7 +900,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col3)}
                     onPress={() => infoKursi(data.penumpang3.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang3.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang3.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm.gif')}
@@ -821,7 +958,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col4)}
                     onPress={() => editKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang4.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang4.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan.gif')}
@@ -850,7 +989,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col4)}
                     onPress={() => editKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang4.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang4.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_pesan1.gif')}
@@ -879,7 +1020,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col4)}
                     onPress={() => editKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang4.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang4.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm1.gif')}
@@ -908,7 +1051,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     style={jewelStyle(data.col4)}
                     onPress={() => infoKursi(data.penumpang4.id)}>
                     <View style={styles.ruteKursi}>
-                      <Text style={styles.textRute}>{data.penumpang4.kd_trip}</Text>
+                      <Text style={styles.textRute}>
+                        {data.penumpang4.kd_trip}
+                      </Text>
                     </View>
                     <ImageBackground
                       source={require('../../images/kursi_konfirm.gif')}
@@ -968,22 +1113,8 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
     AsyncStorage.getItem('kota').then(value => setCsoKota(value));
     AsyncStorage.getItem('bleMac').then(value => setBleMac(value));
 
-    // const focusHandler = navigation.addListener('focus', () => {
-    //   console.log('gowback()');
-    //   if (idJadwal.length != 0) {
-    //     console.log('Jadwalid:', idDtJadwal);
-    //     getDetailJadwal(idDtJadwal);
-    //   }
-    // });
-
     getOutletStart();
-  }, []);
-
-  // useFocusEffect(
-  //   useCallback(() => {
-  //     console.log('aku mundur');
-  //   }, [])
-  // )
+  }, [route.params?.post]);
 
   const inputHandler = (key, text) => {
     const _inputs = [...kursiSelected];
@@ -1119,12 +1250,42 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
     }
   };
 
+  const setarmada = () => {
+    console.log('setarmada');
+    let data = JSON.stringify({
+      id_dt_jadwal: idDtJadwal,
+      kd_kendaraan: kdKendaraan,
+      kd_sopir: kdSopir,
+      created_by: userId,
+    });
+
+    console.log(data);
+    fetch(API_URL + 'reservasi/setarmada', {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: data,
+    })
+      .then(resp => resp.json())
+      .then(json => {
+        console.log('-----------------------');
+        console.log({json});
+        setModalVisible(false);
+        getDetailJadwal(idDtJadwal);
+      })
+      .catch(error => console.error(error))
+      .finally(() => setLoading(false));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View>
         <View style={styles.jadwal}>
           <TouchableOpacity onPress={() => setOpen(true)}>
-            <View style={{flexDirection: 'row',justifyContent:'space-between'}}>
+            <View
+              style={{flexDirection: 'row', justifyContent: 'space-between'}}>
               <Icons name="calendar-month" color={'white'} size={24} />
               <Text
                 style={{
@@ -1136,7 +1297,9 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                 }}>
                 {Moment(date).format('dddd, DD-MM-yyyy')}
               </Text>
-              <TouchableOpacity style={{alignItems:'flex-end'}} onPress={() => refresh()}>
+              <TouchableOpacity
+                style={{alignItems: 'flex-end'}}
+                onPress={() => refresh()}>
                 <Icons name="refresh" color={'white'} size={24} />
               </TouchableOpacity>
             </View>
@@ -1222,11 +1385,11 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             setVisibleForm(false);
             setModalStart(!modalStart);
           }}>
-          <View style={{bottom: 0}}>
+          <View style={{paddingBottom: 100}}>
             <View
               style={{
                 height: 100,
-                backgroundColor: 'red',
+                backgroundColor: colors.red,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
@@ -1246,6 +1409,7 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
         </Modal>
 
         <Modal
+          style={{paddingBottom: 100}}
           statusBarTranslucent={true}
           animationType="slide"
           transparent={false}
@@ -1254,11 +1418,11 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             setVisibleForm(false);
             setModalEnd(!modalEnd);
           }}>
-          <View style={{bottom: 0}}>
+          <View style={{marginBottom: 100}}>
             <View
               style={{
                 height: 100,
-                backgroundColor: 'red',
+                backgroundColor: colors.red,
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
@@ -1267,6 +1431,7 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
               </Text>
             </View>
             <SectionList
+              style={{}}
               keyExtractor={(item, index) => item + index}
               sections={endOutletDatasource}
               renderItem={RenderItemOutletEnd}
@@ -1286,7 +1451,24 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             //Alert.alert('Modal has been closed.');
             setModalJadwal(!modalJadwal);
           }}>
-          <View style={{paddingTop: 20}}>
+          <View style={{bottom: 0}}>
+            <View
+              style={{
+                height: 80,
+                backgroundColor: colors.red,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}>
+              <Text
+                style={{
+                  marginTop: 15,
+                  color: 'white',
+                  fontSize: 16,
+                  fontWeight: 'bold',
+                }}>
+                JADWAL KEBERANGKATAN
+              </Text>
+            </View>
             <FlatList
               data={jadwal}
               //renderItem={({ item }) => <Text style={styles.item}>{item.id_jadwal}</Text>}
@@ -1302,14 +1484,19 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     }}>
                     <View
                       style={{
-                        backgroundColor: 'red',
+                        backgroundColor: colors.red,
                         width: '30%',
                         alignItems: 'center',
                         justifyContent: 'center',
                         padding: 5,
+                        borderRadius: 10,
                       }}>
-                      <Text style={{color: 'white'}}>{item.start_kota}</Text>
-                      <Text style={{color: 'white'}}>{item.end_kota}</Text>
+                      <Text style={{color: 'white', fontSize: 12}}>
+                        {item.start_kota}
+                      </Text>
+                      <Text style={{color: 'white', fontSize: 12}}>
+                        {item.end_kota}
+                      </Text>
                     </View>
                     <View style={{width: '70%', padding: 5}}>
                       <View
@@ -1318,13 +1505,22 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                           flexDirection: 'row',
                         }}>
                         <View style={{marginLeft: 10}}>
-                          <Text>{item.jam_berangkat}</Text>
-                          <Text>Sisa Kursi: {item.id_rute}</Text>
-                          <Text>Rp. 85.000</Text>
+                          <Text style={{fontSize: 11}}>
+                            {item.jam_berangkat}
+                          </Text>
+                          <Text style={{fontSize: 11}}>
+                            Kapasitas: {item.kapasitas}
+                          </Text>
+                          <Text style={{fontSize: 11, color: 'green'}}>
+                            Sisa Kursi: {item.sisa_kursi}
+                          </Text>
                         </View>
                         <View>
-                          <Text>{item.layanan}</Text>
-                          <Text>{item.kd_jadwal}</Text>
+                          <Text style={{fontSize: 11}}>{item.layanan}</Text>
+                          <Text style={{fontSize: 11}}>{item.kd_jadwal}</Text>
+                          <Text style={{fontSize: 11, color: 'red'}}>
+                            Rp.{item.harga}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -1335,8 +1531,173 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             />
           </View>
         </Modal>
+        {isMutasi ? (
+          <View
+            style={{
+              height: 60,
+              padding: 10,
+              backgroundColor: 'yellow',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+            }}>
+            <Text style={{margin: 10}}>Anda dalam mode Mutasi!</Text>
+            <TouchableOpacity
+              style={{
+                height: 40,
+                width: 70,
+                backgroundColor: 'red',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 5,
+              }}
+              onPress={() => setIsMutasi(false)}>
+              <Text style={{color: 'white'}}>Batal</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View></View>
+        )}
       </View>
-      <ScrollView style={{marginBottom: 80}} ref={scrollRef} refreshControl={
+
+      <Modal
+        statusBarTranslucent={true}
+        animationType="fade"
+        transparent={false}
+        visible={modalVisible}
+        onRequestClose={() => {
+          setVisibleForm(false);
+          setModalVisible(!modalVisible);
+        }}>
+        <View style={{paddingBottom: 100}}>
+          <View
+            style={{
+              height: 100,
+              backgroundColor: colors.red,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Text style={{color: 'white', fontSize: 16, fontWeight: 'bold'}}>
+              Pengaturan Armada
+            </Text>
+          </View>
+          <View style={{padding: 10}}>
+            <View style={styles.containerObj}>
+              <Text>Manifest</Text>
+              <Text style={{fontWeight: '700'}}>
+                ss
+              </Text>
+            </View>
+            <View style={styles.containerObj}>
+              <Text>tgl_manifest</Text>
+              <Text style={{fontWeight: '700'}}>
+                ss
+              </Text>
+            </View>
+            <View style={styles.containerObj}>
+              <Text>kd_kendaraan</Text>
+              <Text style={{fontWeight: '700'}}>
+                ss
+              </Text>
+            </View>
+            <View style={styles.containerObj}>
+              <Text>kendaraan</Text>
+              <Text style={{fontWeight: '700'}}>
+                ss
+              </Text>
+            </View>
+            <View style={styles.containerObj}>
+              <Text>kd_sopir</Text>
+              <Text style={{fontWeight: '700'}}>
+                ss
+              </Text>
+            </View>
+            <View style={styles.containerObj}>
+              <Text>nama_sopir</Text>
+              <Text style={{fontWeight: '700'}}>ss</Text>
+            </View>
+          </View>
+          <View style={{}}>
+            <Text style={{marginLeft: 10}}>Kendaraan</Text>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={kendaraan}
+              search
+              maxHeight={300}
+              labelField="label"
+              valueField="kd_kendaraan"
+              placeholder="Select item"
+              searchPlaceholder="Search..."
+              value={value}
+              onChange={item => {
+                setKdKendaraan(item.kd_kendaraan);
+              }}
+              renderLeftIcon={() => (
+                <IconFa5
+                  style={styles.icon}
+                  color="black"
+                  name="car"
+                  size={20}
+                />
+              )}
+            />
+
+            <Text style={{marginLeft: 10}}>Sopir</Text>
+            <Dropdown
+              style={styles.dropdown}
+              placeholderStyle={styles.placeholderStyle}
+              selectedTextStyle={styles.selectedTextStyle}
+              inputSearchStyle={styles.inputSearchStyle}
+              iconStyle={styles.iconStyle}
+              data={sopir}
+              search
+              maxHeight={300}
+              labelField="label"
+              valueField="kd_sopir"
+              placeholder="Select item"
+              searchPlaceholder="Search..."
+              value={value}
+              onChange={item => {
+                setKdSopir(item.kd_sopir);
+              }}
+              renderLeftIcon={() => (
+                <IconFa5
+                  style={styles.icon}
+                  color="black"
+                  name="user"
+                  size={20}
+                />
+              )}
+            />
+            
+          </View>
+          <View style={styles.boxRow}>
+            <TouchableOpacity
+              style={styles.buttonBayar}
+              onPress={() => {}}>
+              <Text style={{color: 'white'}}>Cetak Manifest</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.buttonBayar}
+              onPress={() => setarmada()}>
+              <Text style={{color: 'white'}}>Simpan</Text>
+            </TouchableOpacity>
+            {/*<CetakTiket></CetakTiket>*/}
+            <TouchableOpacity
+              style={styles.buttonMutasi}
+              onPress={() => setModalVisible(!modalVisible)}>
+              <Text style={{color: 'red'}}>Kembali</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+      <ScrollView
+        style={{marginBottom: 80}}
+        ref={scrollRef}
+        refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }>
         {loading ? (
@@ -1347,11 +1708,20 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
               <>
                 <Legent />
                 <Sususnankursi />
+
                 <View
                   style={{
                     marginTop: 10,
                     borderRadius: 10,
                     backgroundColor: Colors.white,
+                    shadowColor: '#000',
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
                   }}>
                   <View
                     style={{
@@ -1471,6 +1841,14 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
                     marginTop: 10,
                     borderRadius: 10,
                     backgroundColor: Colors.white,
+                    shadowColor: '#000',
+                    shadowOffset: {
+                      width: 0,
+                      height: 2,
+                    },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.84,
+                    elevation: 5,
                   }}>
                   <View
                     style={{
@@ -1528,22 +1906,31 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             )}
           </View>
         )}
-        
       </ScrollView>
 
       <View style={styles.bottomView}>
-        <View style={{flexDirection: 'row'}} >
+        <View style={{flexDirection: 'row'}}>
           <TouchableOpacity
-            style={{backgroundColor: 'red', padding: 10, marginLeft: 10}}
+            style={{
+              backgroundColor: 'red',
+              padding: 10,
+              marginLeft: 10,
+              borderRadius: 7,
+            }}
             onPress={() => goshow()}>
-            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
+            <Text style={{color: 'white', fontSize: 14, fontWeight: 'bold'}}>
               GO SHOW
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={{backgroundColor: 'red', padding: 10, marginLeft: 10}}
+            style={{
+              backgroundColor: 'red',
+              padding: 10,
+              marginLeft: 10,
+              borderRadius: 7,
+            }}
             onPress={() => booking()}>
-            <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
+            <Text style={{color: 'white', fontSize: 14, fontWeight: 'bold'}}>
               BOOKING
             </Text>
           </TouchableOpacity>
@@ -1559,8 +1946,10 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
             alignItems: 'center',
             justifyContent: 'center',
           }}
-          onPress={() => {}}>
-          <Text style={{color: 'white', fontSize: 18, fontWeight: 'bold'}}>
+          onPress={() => {
+            setModalVisible(!modalVisible);
+          }}>
+          <Text style={{color: 'white', fontSize: 14, fontWeight: 'bold'}}>
             IN
           </Text>
         </TouchableOpacity>
@@ -1572,10 +1961,15 @@ const TiketScreen = ({navigation}: {navigation: any}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bgcolor,
   },
-
+  boxRow: {
+    margin: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   jadwal: {
-    backgroundColor: 'red',
+    backgroundColor: '#C40C0C',
     padding: 10,
   },
   card: {
@@ -1661,14 +2055,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ruteKursi: {
-    alignItems:'center',
-    justifyContent:'center',
+    alignItems: 'center',
+    justifyContent: 'center',
     width: 70,
     height: 20,
     backgroundColor: 'yellowgreen',
   },
-  textRute:{
-    fontSize:9
+  textRute: {
+    fontSize: 9,
   },
   sheat_blank: {
     width: 50,
@@ -1768,6 +2162,42 @@ const styles = StyleSheet.create({
     backgroundColor: 'red',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  buttonModal: {
+    flex: 1,
+    height: 40,
+    margin: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: 'white',
+    borderColor: 'red',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonBayar: {
+    flex: 1,
+    height: 40,
+    margin: 5,
+    borderRadius: 5,
+    backgroundColor: 'red',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonMutasi: {
+    flex: 1,
+    height: 40,
+    margin: 5,
+    borderRadius: 5,
+    borderWidth: 1,
+    backgroundColor: 'white',
+    borderColor: 'red',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  containerObj: {
+    height: 50,
+    paddingLeft: 10,
+    backgroundColor: Colors.white
   },
 });
 export default TiketScreen;

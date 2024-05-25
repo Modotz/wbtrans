@@ -45,6 +45,7 @@ export default function EditPenumpangScreen({route, navigation}) {
   const [bleMac, setBleMac] = useState('');
 
   const [loading, setLoading] = useState(true);
+  const [dataToSendBack, setDataToSendBack] = useState();
   const [penumpang, setPenumpang] = useState({
     reservasi: {
       id: '',
@@ -356,13 +357,27 @@ export default function EditPenumpangScreen({route, navigation}) {
         });
 
         await BluetoothEscposPrinter.printText('\n\r\n\r\n\r', {});
-        navigation.goBack(1);
+        route.params.onGoBack({
+          mutasi : false,
+          message :'Cetak Tiket',
+          id_dt_jadwal :penumpang.reservasi.id_dt_jadwal
+        });
+        navigation.goBack();
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
   };
 
-  const mutasi = () => {};
+  const mutasi = () => {
+    console.log('Mode mutasi');
+    
+    route.params.onGoBack({
+      mutasi : true,
+      message :'Mode Mutasi',
+      dt_reservasi_id :dtReservasiId
+    });
+    navigation.goBack();
+  };
 
   const batal = () => {
     let dt_reservasi_id = dtReservasiId;
@@ -386,8 +401,13 @@ export default function EditPenumpangScreen({route, navigation}) {
     })
       .then(resp => resp.json())
       .then(async json => {
-        console.log(json);
-        navigation.goBack(1);
+        //console.log(json);
+        route.params.onGoBack({
+          mutasi : false,
+          message :'Cancel Tiket',
+          id_dt_jadwal :penumpang.reservasi.id_dt_jadwal
+        });
+        navigation.goBack();
       })
       .catch(error => console.error(error))
       .finally(() => setLoading(false));
@@ -430,7 +450,12 @@ export default function EditPenumpangScreen({route, navigation}) {
         .then(json => {
           console.log('-----------------------');
           console.log({json});
-          navigation.goBack(1);
+          route.params.onGoBack({
+            mutasi : false,
+            message :'Update Tiket',
+            id_dt_jadwal :penumpang.reservasi.id_dt_jadwal
+          });
+          navigation.goBack();
         })
         .catch(error => console.error(error))
         .finally(() => setLoading(false));

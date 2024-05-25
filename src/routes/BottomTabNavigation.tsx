@@ -15,7 +15,7 @@ import { NavigationContainer } from '@react-navigation/native';
 
 function BottomTabNavigation() {
   return (
-      <Tab.Navigator>
+      <Tab.Navigator activeColor="#FF6500" inactiveColor="#C0D6E8" barStyle={{ backgroundColor: '#C40C0C' }}>
         <Tab.Screen name="Home" 
         component={HomeScreen} 
         options={{
@@ -27,7 +27,8 @@ function BottomTabNavigation() {
               size={26}
             />
           ),
-        }} />
+        }} 
+        />
         <Tab.Screen name="Tiket" 
         component={TiketScreen} 
         options={{

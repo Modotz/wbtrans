@@ -15,7 +15,6 @@ import {
 import {SliderBox} from 'react-native-image-slider-box';
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
-//import Card from '../../components/Card';
 import {green100} from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 import colors from '../../constants/Colors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -25,10 +24,11 @@ import {Card, Text} from 'react-native-paper';
 
 const HomeScreen = ({navigation}: {navigation: any}) => {
   const [images, setImages] = useState([
-    require('../../images/slider1.png'),
-    require('../../images/slider3.png'),
-    require('../../images/slider4.png'),
-    'https://source.unsplash.com/1024x768/?tree',
+    require('../../images/slider6.jpeg'),
+    require('../../images/slider7.jpeg'),
+    require('../../images/slider8.jpeg'),
+    require('../../images/slider9.jpeg'),
+    require('../../images/slider10.jpeg'),
   ]);
 
   const [username, setUsername] = useState('');
@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
+    backgroundColor: colors.bgcolor
   },
 
   sectionHeader: {
