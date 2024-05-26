@@ -13,6 +13,7 @@ import EditPenumpang from './tiket/EditPenumpangScreen';
 import CetakTiket from './printer/CetakTiketScreen';
 import CetakTiket2 from './printer/CetakTiket2Screen';
 import Printer from './printer/PrinterScreen';
+import Manifest from './tiket/ManifestScreen';
 
 export {
     Home,
@@ -23,6 +24,7 @@ export {
     DetailsData,
     Tiket,
     Paket,
+    Manifest,
     DetailPenumpang,
     EditPenumpang,
     CetakTiket,

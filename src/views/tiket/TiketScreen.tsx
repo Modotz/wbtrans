@@ -66,26 +66,45 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
   const [dtJadwalId, setDtJadwalId] = useState('');
   const [kendaraan, setKendaraan] = useState([
     {
-      id: "0",
-      kd_kendaraan: "",
-      plat_nomor: "",
-      kd_layout: "",
-      jml_dek: "",
-      kapasitas: ""
-      },
+      id: '0',
+      kd_kendaraan: '',
+      plat_nomor: '',
+      kd_layout: '',
+      jml_dek: '',
+      kapasitas: '',
+    },
   ]);
 
-  const [keberangkatan, setKeberangkatan] = useState(
-    []
-  );
+  const [keberangkatan, setKeberangkatan] = useState({
+    manifest: '',
+    tgl_manifest: '',
+    manifest_paket: '',
+    tgl_manifest_paket: '',
+    kd_kendaraan: '',
+    kendaraan: '',
+    kd_sopir: '',
+    nama_sopir: '',
+    nrp: '',
+    tgl_berangkat: '',
+    total_penumpang: 0,
+    total_paket: 0,
+    tgl_paket: '',
+    harga_tiket: {
+      id: '',
+      kd_trip: '',
+      harga: '',
+      discount: '',
+    },
+    status_keberangkatan: '',
+  });
 
   const [sopir, setSopir] = useState([
     {
-      id: "0",
-      kd_sopir: "",
-      nrp: "",
-      nama: ""
-      },
+      id: '0',
+      kd_sopir: '',
+      nrp: '',
+      nama: '',
+    },
   ]);
 
   const [kdKendaraan, setKdKendaraan] = useState('');
@@ -238,12 +257,13 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
       })
         .then(resp => resp.json())
         .then(json => {
-          //console.log(json.jadwal.id);
+          console.log(json.keberangkatan);
           setIdJadwal(json.jadwal.id_jadwal);
           setIdDtJadwal(json.jadwal.id);
           setItemJadwal(json.dt_layout);
           setPrice(json.harga_tiket);
           setKendaraan(json.kendaraan);
+          setKdSopir(json.kd_sopir);
           setSopir(json.sopir);
           setKeberangkatan(json.keberangkatan);
           // setKdKendaraan(json.keberangkatan.kd_kendaraan);
@@ -1279,6 +1299,35 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
       .finally(() => setLoading(false));
   };
 
+  const openmanifest =() =>{
+    console.log('openmanifest:',dtJadwalId);
+    if(kdSopir == ''){
+      Alert.alert("Kendaraan dan Sopir belum di atur.");
+    }else{
+      fetch(API_URL + 'reservasi/getmanifest/' + dtJadwalId, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+      })
+        .then(resp => resp.json())
+        .then(json => {
+          navigation.navigate('Manifest', {
+            data: json,
+            onGoBack: data => {
+              // Callback function to handle data from ScreenB
+              console.log(data.message);
+              getDetailJadwal(data.id_dt_jadwal);
+            },
+          });
+        })
+        .catch(error => console.error(error))
+        .finally(() => setLoading(false));
+    }
+    
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View>
@@ -1581,103 +1630,121 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
             </Text>
           </View>
           <View style={{padding: 10}}>
-            <View style={styles.containerObj}>
-              <Text>Manifest</Text>
-              <Text style={{fontWeight: '700'}}>
-                ss
-              </Text>
-            </View>
-            <View style={styles.containerObj}>
-              <Text>tgl_manifest</Text>
-              <Text style={{fontWeight: '700'}}>
-                ss
-              </Text>
-            </View>
-            <View style={styles.containerObj}>
-              <Text>kd_kendaraan</Text>
-              <Text style={{fontWeight: '700'}}>
-                ss
-              </Text>
-            </View>
-            <View style={styles.containerObj}>
-              <Text>kendaraan</Text>
-              <Text style={{fontWeight: '700'}}>
-                ss
-              </Text>
-            </View>
-            <View style={styles.containerObj}>
-              <Text>kd_sopir</Text>
-              <Text style={{fontWeight: '700'}}>
-                ss
-              </Text>
-            </View>
-            <View style={styles.containerObj}>
-              <Text>nama_sopir</Text>
-              <Text style={{fontWeight: '700'}}>ss</Text>
-            </View>
-          </View>
-          <View style={{}}>
-            <Text style={{marginLeft: 10}}>Kendaraan</Text>
-            <Dropdown
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={kendaraan}
-              search
-              maxHeight={300}
-              labelField="label"
-              valueField="kd_kendaraan"
-              placeholder="Select item"
-              searchPlaceholder="Search..."
-              value={value}
-              onChange={item => {
-                setKdKendaraan(item.kd_kendaraan);
-              }}
-              renderLeftIcon={() => (
-                <IconFa5
-                  style={styles.icon}
-                  color="black"
-                  name="car"
-                  size={20}
-                />
-              )}
-            />
+            <View
+              style={{
+                marginTop: 10,
+                borderRadius: 10,
+                backgroundColor: Colors.white,
+                shadowColor: '#000',
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+              }}>
+              <View style={styles.containerObj}>
+                <Text>Manifest</Text>
+                <Text style={{fontWeight: '700'}}>
+                  {keberangkatan.manifest}
+                </Text>
+              </View>
+              <View style={styles.containerObj}>
+                <Text>Tanggal Manifest</Text>
+                <Text style={{fontWeight: '700'}}>
+                  {keberangkatan.tgl_manifest}
+                </Text>
+              </View>
 
-            <Text style={{marginLeft: 10}}>Sopir</Text>
-            <Dropdown
-              style={styles.dropdown}
-              placeholderStyle={styles.placeholderStyle}
-              selectedTextStyle={styles.selectedTextStyle}
-              inputSearchStyle={styles.inputSearchStyle}
-              iconStyle={styles.iconStyle}
-              data={sopir}
-              search
-              maxHeight={300}
-              labelField="label"
-              valueField="kd_sopir"
-              placeholder="Select item"
-              searchPlaceholder="Search..."
-              value={value}
-              onChange={item => {
-                setKdSopir(item.kd_sopir);
-              }}
-              renderLeftIcon={() => (
-                <IconFa5
-                  style={styles.icon}
-                  color="black"
-                  name="user"
-                  size={20}
-                />
-              )}
-            />
-            
+              <View style={styles.containerObj}>
+                <Text>Kendaraan</Text>
+                <Text style={{fontWeight: '700'}}>
+                  {keberangkatan.kendaraan}
+                </Text>
+              </View>
+
+              <View style={styles.containerObj}>
+                <Text>Nama Sopir</Text>
+                <Text style={{fontWeight: '700'}}>
+                  {keberangkatan.nama_sopir + ' ' + keberangkatan.nrp}
+                </Text>
+              </View>
+            </View>
+            <View
+              style={{
+                marginTop: 10,
+                borderRadius: 10,
+                backgroundColor: Colors.white,
+                shadowColor: '#000',
+                shadowOffset: {
+                  width: 0,
+                  height: 2,
+                },
+                shadowOpacity: 0.25,
+                shadowRadius: 3.84,
+                elevation: 5,
+              }}>
+              <Text style={{marginLeft: 10}}>Kendaraan</Text>
+              <Dropdown
+                style={styles.dropdown}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={kendaraan}
+                search
+                maxHeight={300}
+                labelField="label"
+                valueField="kd_kendaraan"
+                placeholder="Select item"
+                searchPlaceholder="Search..."
+                value={value}
+                onChange={item => {
+                  setKdKendaraan(item.kd_kendaraan);
+                }}
+                renderLeftIcon={() => (
+                  <IconFa5
+                    style={styles.icon}
+                    color="black"
+                    name="car"
+                    size={20}
+                  />
+                )}
+              />
+
+              <Text style={{marginLeft: 10}}>Sopir</Text>
+              <Dropdown
+                style={styles.dropdown}
+                placeholderStyle={styles.placeholderStyle}
+                selectedTextStyle={styles.selectedTextStyle}
+                inputSearchStyle={styles.inputSearchStyle}
+                iconStyle={styles.iconStyle}
+                data={sopir}
+                search
+                maxHeight={300}
+                labelField="label"
+                valueField="kd_sopir"
+                placeholder="Select item"
+                searchPlaceholder="Search..."
+                value={value}
+                onChange={item => {
+                  setKdSopir(item.kd_sopir);
+                }}
+                renderLeftIcon={() => (
+                  <IconFa5
+                    style={styles.icon}
+                    color="black"
+                    name="user"
+                    size={20}
+                  />
+                )}
+              />
+            </View>
           </View>
+
           <View style={styles.boxRow}>
-            <TouchableOpacity
-              style={styles.buttonBayar}
-              onPress={() => {}}>
+            <TouchableOpacity style={styles.buttonBayar} onPress={() => openmanifest()}>
               <Text style={{color: 'white'}}>Cetak Manifest</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -2197,7 +2264,7 @@ const styles = StyleSheet.create({
   containerObj: {
     height: 50,
     paddingLeft: 10,
-    backgroundColor: Colors.white
+    backgroundColor: Colors.white,
   },
 });
 export default TiketScreen;

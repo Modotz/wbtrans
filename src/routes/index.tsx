@@ -18,6 +18,7 @@ import {
   CetakTiket,
   CetakTiket2,
   Printer,
+  Manifest
 } from '../views';
 
 const Stack = createStackNavigator();
@@ -285,6 +286,20 @@ export default function App() {
             },
           }}
           component={Printer}
+        />
+        <Stack.Screen
+          name="Manifest"
+          options={{
+            title: 'Manifest',
+            headerStyle: {
+              backgroundColor: 'red',
+            },
+            headerTintColor: '#fff',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+          component={Manifest}
         />
       </Stack.Navigator>
       {/* <MyStack /> */}
