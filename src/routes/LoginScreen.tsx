@@ -200,6 +200,7 @@ const styles = StyleSheet.create({
     paddingRight: 15,
     borderWidth: 1,
     borderRadius: 30,
+    color:'black',
     borderColor: '#dadae8',
   },
   registerTextStyle: {

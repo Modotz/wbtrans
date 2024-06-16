@@ -27,7 +27,6 @@ import IconFa5 from 'react-native-vector-icons/dist/FontAwesome5';
 import Moment from 'moment';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Legent from '../../components/Legent';
-import TicketForm from '../../components/TicketForm';
 
 import {API_URL} from '../../constants/Repositories';
 
@@ -257,7 +256,7 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
       })
         .then(resp => resp.json())
         .then(json => {
-          console.log(json.keberangkatan);
+          console.log('harga_tiket --->',json.harga_tiket);
           setIdJadwal(json.jadwal.id_jadwal);
           setIdDtJadwal(json.jadwal.id);
           setItemJadwal(json.dt_layout);
@@ -266,8 +265,8 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
           setKdSopir(json.kd_sopir);
           setSopir(json.sopir);
           setKeberangkatan(json.keberangkatan);
-          // setKdKendaraan(json.keberangkatan.kd_kendaraan);
-          // setKdSopir(json.keberangkatan.kd_sopir);
+          setKdKendaraan(json.keberangkatan.kd_kendaraan);
+          setKdSopir(json.keberangkatan.kd_sopir);
           clearKursi();
           clearForm();
           setLoading(false);
@@ -1169,7 +1168,7 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
   };
 
   const booking = () => {
-    setLoading(true);
+    //setLoading(true);
     let start_trip = initStartOutlet().id;
     let end_trip = initEndOutlet().id;
 
@@ -1197,26 +1196,26 @@ const TiketScreen = ({navigation}: {navigation: any}, route) => {
       psgArray: kursiSelected,
     });
 
-    //console.log(data);
+    console.log(data);
 
-    if (start_trip != null && end_trip != null) {
-      fetch(API_URL + 'reservasi/booking', {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-        body: data,
-      })
-        .then(resp => resp.json())
-        .then(json => {
-          console.log('-----------------------');
-          console.log({json});
-          getDetailJadwal(idDtJadwal);
-        })
-        .catch(error => console.error(error))
-        .finally(() => setLoading(false));
-    }
+    // if (start_trip != null && end_trip != null) {
+    //   fetch(API_URL + 'reservasi/booking', {
+    //     method: 'POST',
+    //     headers: {
+    //       Accept: 'application/json',
+    //       'Content-Type': 'application/json',
+    //     },
+    //     body: data,
+    //   })
+    //     .then(resp => resp.json())
+    //     .then(json => {
+    //       console.log('-----------------------');
+    //       console.log({json});
+    //       getDetailJadwal(idDtJadwal);
+    //     })
+    //     .catch(error => console.error(error))
+    //     .finally(() => setLoading(false));
+    // }
   };
 
   const goshow = () => {
